@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace CMS.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     [ApiController]
     public class CredentialsController : ControllerBase
     {
@@ -61,5 +61,14 @@ namespace CMS.Controllers
 
             return new JsonResult(NoContent());
         }
+        // Get all
+        [HttpGet()]
+        public JsonResult GetAll()
+        {
+            var result = _context.Credentials.ToList();
+
+            return new JsonResult(Ok(result));
+        }
     }
+
 }
