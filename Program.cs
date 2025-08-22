@@ -1,11 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using CMS.Data;
+using Microsoft.AspNetCore.Identity;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddDbContext<ApiContext>
-    (opt => opt.UseInMemoryDatabase("CredentialsDb"));
+builder.Services.AddDbContext<AuthDbContext>
+    (opt => opt.UseInMemoryDatabase("AuthDb"));
+
+builder.Services.AddAuthorization();
+builder.Services.AddIdentityApiEndpoints<IdentityUser>()
+        .AddEntityFrameworkStores<AuthDbContext>();
 
 // CORS: allow your Vite dev origin(s)
 var cors = "DevCors";
@@ -23,6 +28,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.MapIdentityApi<IdentityUser>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
