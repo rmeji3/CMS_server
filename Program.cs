@@ -1,84 +1,125 @@
-using Microsoft.EntityFrameworkCore;
+using System;
 using CMS.Data;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
-builder.Services.AddDbContext<AuthDbContext>
-    (opt => opt.UseInMemoryDatabase("AuthDb"));
+builder.Services.AddDbContext<AuthDbContext>(opt =>
+    opt.UseInMemoryDatabase("AuthDb"));
+
+
+builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
+    .AddIdentityCookies();
 
 builder.Services.AddAuthorization();
-builder.Services.AddIdentityApiEndpoints<IdentityUser>()
-        .AddEntityFrameworkStores<AuthDbContext>();
 
-// CORS: allow your Vite dev origin(s)
-var cors = "DevCors";
-builder.Services.AddCors(options =>
+builder.Services.AddIdentityCore<IdentityUser>(options =>
 {
-    options.AddPolicy(cors, policy =>
-        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173") // add others if needed
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials()
-              );
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 6;
+})
+.AddEntityFrameworkStores<AuthDbContext>()
+.AddSignInManager();
+
+builder.Services.ConfigureApplicationCookie(o =>
+{
+    o.Cookie.Name = ".cms.auth";
+    o.Cookie.HttpOnly = true;
+    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    o.Cookie.SameSite = SameSiteMode.None; 
+    o.SlidingExpiration = true;
+});
+
+
+const string cors = "DevCors";
+builder.Services.AddCors(opts =>
+{
+    opts.AddPolicy(cors, p => p
+        .WithOrigins(
+        "https://localhost:5173",
+        "https://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
 });
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(opts =>
+
+
+builder.Services.AddAntiforgery(o =>
 {
-    opts.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo()
-    {
-        Title = "Authentication",
-        Version = "v1"
-    });
-
-    opts.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Please enter a valid token",
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        BearerFormat = "JWT",
-        Scheme = "Bearer",
-    });
-
-    opts.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-    {
-        {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-            {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            []
-        }
-    });
+    o.HeaderName = "X-CSRF-TOKEN";    
+    o.Cookie.Name = "XSRF-TOKEN";     
+    o.Cookie.SameSite = SameSiteMode.None;
+    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 
 
 var app = builder.Build();
 
-app.MapIdentityApi<IdentityUser>();
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors(cors);
 
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapGet("/antiforgery/token", (IAntiforgery af, HttpContext ctx) =>
+{
+    var tokens = af.GetAndStoreTokens(ctx); 
+    return Results.Ok(new { ok = true });
+}).AllowAnonymous();
+
+
+app.MapPost("/auth/register", async (
+    UserManager<IdentityUser> users,
+    SignInManager<IdentityUser> signIn,
+    RegisterDto dto) =>
+{
+    var user = new IdentityUser { UserName = dto.Email, Email = dto.Email };
+    var result = await users.CreateAsync(user, dto.Password);
+    if (!result.Succeeded) return Results.BadRequest(result.Errors);
+    await signIn.SignInAsync(user, isPersistent: true);
+    return Results.Ok(new { ok = true });
+}).AllowAnonymous();
+
+app.MapPost("/auth/login", async (
+    SignInManager<IdentityUser> signIn,
+    LoginDto dto) =>
+{
+    var result = await signIn.PasswordSignInAsync(
+        dto.Email, dto.Password, isPersistent: true, lockoutOnFailure: false);
+    return result.Succeeded ? Results.Ok(new { ok = true }) : Results.Unauthorized();
+}).AllowAnonymous();
+
+app.MapPost("/auth/logout", async (SignInManager<IdentityUser> signIn) =>
+{
+    await signIn.SignOutAsync();
+    return Results.Ok(new { ok = true });
+}).RequireAuthorization();
+
+
+// Controllers are protected by default
+app.MapControllers().RequireAuthorization();
 
 app.Run();
+
+public record RegisterDto(string Email, string Password);
+public record LoginDto(string Email, string Password);
