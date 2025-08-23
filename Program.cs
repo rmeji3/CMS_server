@@ -96,6 +96,15 @@ app.MapPost("/auth/register", async (
     var user = new IdentityUser { UserName = dto.Email, Email = dto.Email };
     var result = await users.CreateAsync(user, dto.Password);
     if (!result.Succeeded) return Results.BadRequest(result.Errors);
+
+    // Add first and last name as claims
+    var claims = new List<System.Security.Claims.Claim>
+    {
+        new(System.Security.Claims.ClaimTypes.GivenName, dto.FirstName ?? string.Empty),
+        new(System.Security.Claims.ClaimTypes.Surname, dto.LastName ?? string.Empty)
+    };
+    await users.AddClaimsAsync(user, claims);
+
     await signIn.SignInAsync(user, isPersistent: true);
     return Results.Ok(new { ok = true });
 }).AllowAnonymous();
@@ -121,5 +130,5 @@ app.MapControllers().RequireAuthorization();
 
 app.Run();
 
-public record RegisterDto(string Email, string Password);
+public record RegisterDto(string Email, string Password, string FirstName, string LastName);
 public record LoginDto(string Email, string Password);
