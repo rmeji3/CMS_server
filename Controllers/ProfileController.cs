@@ -1,20 +1,37 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
+using CMS.Data;
 
 [ApiController]
 [Route("[controller]")]
 public class ProfileController : ControllerBase
 {
+    private readonly UserManager<ApplicationUser> _userManager;
+
+    public ProfileController(UserManager<ApplicationUser> userManager)
+    {
+        _userManager = userManager;
+    }
+
     [HttpGet("me")]
     [Authorize]
-    public IActionResult GetMyEmail()
+    public async Task<IActionResult> GetMyProfile()
     {
-        // The email claim is usually present if you use Identity
-        var email = User.Identity?.Name ?? User.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return NotFound("User not found.");
 
-        if (email == null)
-            return NotFound("Email not found.");
+        // Optionally increment page visits metric when profile viewed
+        // user.PageVisits++;
+        // await _userManager.UpdateAsync(user);
 
-        return Ok(new { email });
+        return Ok(new {
+            email = user.Email,
+            firstName = user.FirstName ?? "First Name not provided",
+            lastName = user.LastName ?? "Last Name not provided",
+            pageVisits = user.PageVisits
+        });
     }
 }

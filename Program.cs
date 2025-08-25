@@ -16,7 +16,7 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddIdentityCore<IdentityUser>(options =>
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
 {
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
@@ -89,11 +89,11 @@ app.MapGet("/antiforgery/token", (IAntiforgery af, HttpContext ctx) =>
 
 
 app.MapPost("/auth/register", async (
-    UserManager<IdentityUser> users,
-    SignInManager<IdentityUser> signIn,
+    UserManager<ApplicationUser> users,
+    SignInManager<ApplicationUser> signIn,
     RegisterDto dto) =>
 {
-    var user = new IdentityUser { UserName = dto.Email, Email = dto.Email };
+    var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email, FirstName = dto.FirstName, LastName = dto.LastName };
     var result = await users.CreateAsync(user, dto.Password);
     if (!result.Succeeded) return Results.BadRequest(result.Errors);
     await signIn.SignInAsync(user, isPersistent: true);
@@ -101,7 +101,7 @@ app.MapPost("/auth/register", async (
 }).AllowAnonymous();
 
 app.MapPost("/auth/login", async (
-    SignInManager<IdentityUser> signIn,
+    SignInManager<ApplicationUser> signIn,
     LoginDto dto) =>
 {
     var result = await signIn.PasswordSignInAsync(
@@ -109,7 +109,7 @@ app.MapPost("/auth/login", async (
     return result.Succeeded ? Results.Ok(new { ok = true }) : Results.Unauthorized();
 }).AllowAnonymous();
 
-app.MapPost("/auth/logout", async (SignInManager<IdentityUser> signIn) =>
+app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signIn) =>
 {
     await signIn.SignOutAsync();
     return Results.Ok(new { ok = true });
@@ -121,5 +121,5 @@ app.MapControllers().RequireAuthorization();
 
 app.Run();
 
-public record RegisterDto(string Email, string Password);
+public record RegisterDto(string Email, string Password, string FirstName, string LastName);
 public record LoginDto(string Email, string Password);
