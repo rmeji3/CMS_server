@@ -1,19 +1,13 @@
-using System;
 using CMS.Data;
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddDbContext<AuthDbContext>(opt =>
     opt.UseInMemoryDatabase("AuthDb"));
-
-
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddIdentityCookies();
-
 builder.Services.AddAuthorization();
 
 builder.Services.AddIdentityCore<IdentityUser>(options =>
@@ -34,7 +28,6 @@ builder.Services.ConfigureApplicationCookie(o =>
     o.SlidingExpiration = true;
 });
 
-
 const string cors = "DevCors";
 builder.Services.AddCors(opts =>
 {
@@ -52,7 +45,6 @@ builder.Services.AddCors(opts =>
 
 builder.Services.AddControllers();
 
-
 builder.Services.AddAntiforgery(o =>
 {
     o.HeaderName = "X-CSRF-TOKEN";    
@@ -63,8 +55,6 @@ builder.Services.AddAntiforgery(o =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-
 
 var app = builder.Build();
 
@@ -81,51 +71,6 @@ app.UseCors(cors);
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/antiforgery/token", (IAntiforgery af, HttpContext ctx) =>
-{
-    var tokens = af.GetAndStoreTokens(ctx); 
-    return Results.Ok(new { ok = true });
-}).AllowAnonymous();
-
-
-app.MapPost("/auth/register", async (
-    UserManager<IdentityUser> users,
-    SignInManager<IdentityUser> signIn,
-    RegisterDto dto) =>
-{
-    var user = new IdentityUser { UserName = dto.Email, Email = dto.Email };
-    var result = await users.CreateAsync(user, dto.Password);
-    if (!result.Succeeded) return Results.BadRequest(result.Errors);
-
-    // Add first and last name as claims
-    var claims = new List<System.Security.Claims.Claim>
-    {
-        new(System.Security.Claims.ClaimTypes.GivenName, dto.FirstName ?? string.Empty),
-        new(System.Security.Claims.ClaimTypes.Surname, dto.LastName ?? string.Empty)
-    };
-    await users.AddClaimsAsync(user, claims);
-
-    await signIn.SignInAsync(user, isPersistent: true);
-    return Results.Ok(new { ok = true });
-}).AllowAnonymous();
-
-app.MapPost("/auth/login", async (
-    SignInManager<IdentityUser> signIn,
-    LoginDto dto) =>
-{
-    var result = await signIn.PasswordSignInAsync(
-        dto.Email, dto.Password, isPersistent: true, lockoutOnFailure: false);
-    return result.Succeeded ? Results.Ok(new { ok = true }) : Results.Unauthorized();
-}).AllowAnonymous();
-
-app.MapPost("/auth/logout", async (SignInManager<IdentityUser> signIn) =>
-{
-    await signIn.SignOutAsync();
-    return Results.Ok(new { ok = true });
-}).RequireAuthorization();
-
-
-// Controllers are protected by default
 app.MapControllers().RequireAuthorization();
 
 app.Run();
