@@ -1,19 +1,13 @@
-using System;
 using CMS.Data;
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddDbContext<AuthDbContext>(opt =>
     opt.UseInMemoryDatabase("AuthDb"));
-
-
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddIdentityCookies();
-
 builder.Services.AddAuthorization();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -34,7 +28,6 @@ builder.Services.ConfigureApplicationCookie(o =>
     o.SlidingExpiration = true;
 });
 
-
 const string cors = "DevCors";
 builder.Services.AddCors(opts =>
 {
@@ -52,7 +45,6 @@ builder.Services.AddCors(opts =>
 
 builder.Services.AddControllers();
 
-
 builder.Services.AddAntiforgery(o =>
 {
     o.HeaderName = "X-CSRF-TOKEN";    
@@ -63,8 +55,6 @@ builder.Services.AddAntiforgery(o =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-
 
 var app = builder.Build();
 
