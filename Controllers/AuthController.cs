@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CMS.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,10 +9,10 @@ namespace CMS.Controllers
     [Route("auth")]
     public class AuthController : ControllerBase
     {
-        private readonly UserManager<IdentityUser> _users;
-        private readonly SignInManager<IdentityUser> _signIn;
+        private readonly UserManager<ApplicationUser> _users;
+        private readonly SignInManager<ApplicationUser> _signIn;
 
-        public AuthController(UserManager<IdentityUser> users, SignInManager<IdentityUser> signIn)
+        public AuthController(UserManager<ApplicationUser> users, SignInManager<ApplicationUser> signIn)
         {
             _users = users;
             _signIn = signIn;
@@ -21,7 +22,7 @@ namespace CMS.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-            var user = new IdentityUser { UserName = dto.Email, Email = dto.Email };
+            var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email };
             var result = await _users.CreateAsync(user, dto.Password);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
