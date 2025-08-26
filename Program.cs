@@ -1,4 +1,5 @@
 using CMS.Data;
+using CMS.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,11 +11,12 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     .AddIdentityCookies();
 builder.Services.AddAuthorization();
 
-builder.Services.AddIdentityCore<IdentityUser>(options =>
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
 {
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
-    options.Password.RequiredLength = 6;
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 2;
 })
 .AddEntityFrameworkStores<AuthDbContext>()
 .AddSignInManager();
