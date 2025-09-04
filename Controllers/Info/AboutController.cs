@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace CMS.Controllers
+namespace CMS.Controllers.Info
 {
     [ApiController]
     [Route("api/[controller]")]
