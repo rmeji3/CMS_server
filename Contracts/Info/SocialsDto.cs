@@ -1,4 +1,4 @@
-﻿namespace CMS.Contracts
+﻿namespace CMS.Contracts.Info
 {
     public class SocialsDto
     {

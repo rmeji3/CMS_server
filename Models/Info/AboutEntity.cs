@@ -1,4 +1,4 @@
-﻿namespace CMS.Models
+﻿namespace CMS.Models.Info
 {
     public class AboutEntity
     {
