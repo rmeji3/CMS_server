@@ -1,4 +1,5 @@
 ﻿using CMS.Models;
+using CMS.Models.Info;
 using CMS.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,7 @@ namespace CMS.Data
         public DbSet<TenantDomain> TenantDomains { get; set; } = null!;
         public DbSet<AboutEntity> About { get; set; } = null!;
         public DbSet<SocialsEntity> Socials { get; set; } = null!;
+        public DbSet<AddressEntity> Address { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
@@ -31,6 +33,9 @@ namespace CMS.Data
             // Example global filter for Socials
             mb.Entity<SocialsEntity>()
                 .HasQueryFilter(s => s.TenantId == _tenant.TenantId);
+            // Example global filter for Address
+            mb.Entity<AddressEntity>()
+                .HasQueryFilter(a => a.TenantId == _tenant.TenantId);
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken ct = default)

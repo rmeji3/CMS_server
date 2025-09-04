@@ -1,7 +1,7 @@
-﻿using CMS.Contracts;
+﻿using CMS.Contracts.Info;
 using CMS.Controllers.Base;
 using CMS.Data;
-using CMS.Models;
+using CMS.Models.Info;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
