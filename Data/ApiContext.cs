@@ -14,6 +14,7 @@ namespace CMS.Data
         public DbSet<Tenant> Tenants { get; set; } = null!;
         public DbSet<TenantDomain> TenantDomains { get; set; } = null!;
         public DbSet<AboutEntity> About { get; set; } = null!;
+        public DbSet<SocialsEntity> Socials { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
@@ -27,6 +28,9 @@ namespace CMS.Data
             // Example global filter for About
             mb.Entity<AboutEntity>()
               .HasQueryFilter(a => a.TenantId == _tenant.TenantId);
+            // Example global filter for Socials
+            mb.Entity<SocialsEntity>()
+                .HasQueryFilter(s => s.TenantId == _tenant.TenantId);
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken ct = default)
