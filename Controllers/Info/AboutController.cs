@@ -1,4 +1,5 @@
-﻿using CMS.Contracts.Info;
+﻿using CMS.Contracts;
+using CMS.Contracts.Info;
 using CMS.Controllers.Base;
 using CMS.Data;
 using CMS.Models.Info;
@@ -77,7 +78,7 @@ namespace CMS.Controllers.Info
         [HttpPost("image")]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(20_000_000)]
-        public async Task<ActionResult<object>> UploadImage([FromForm] AboutImageForm form)
+        public async Task<ActionResult<object>> UploadImage([FromForm] ImageForm form)
         {
             if (TenantId is null) return BadRequest("Tenant not resolved.");
 
@@ -92,7 +93,7 @@ namespace CMS.Controllers.Info
             if (about.Id == 0) _db.About.Add(about);
 
             var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var uploadsDir = Path.Combine(webRoot, "uploads");
+            var uploadsDir = Path.Combine(webRoot, "uploads", TenantId);
             Directory.CreateDirectory(uploadsDir);
 
             var safeBase = Path.GetFileNameWithoutExtension(image.FileName);
@@ -104,7 +105,7 @@ namespace CMS.Controllers.Info
                 await image.CopyToAsync(fs);
             }
 
-            about.ImageUrl = $"/uploads/{fileName}";
+            about.ImageUrl = $"/uploads/{TenantId}/{fileName}";
             await _db.SaveChangesAsync();
 
             return Ok(new { imageUrl = about.ImageUrl });
