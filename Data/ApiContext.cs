@@ -17,6 +17,7 @@ namespace CMS.Data
         public DbSet<AboutEntity> About { get; set; } = null!;
         public DbSet<SocialsEntity> Socials { get; set; } = null!;
         public DbSet<AddressEntity> Address { get; set; } = null!;
+        public DbSet<CarouselEntity> Carousels { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
@@ -36,6 +37,8 @@ namespace CMS.Data
             // Example global filter for Address
             mb.Entity<AddressEntity>()
                 .HasQueryFilter(a => a.TenantId == _tenant.TenantId);
+            mb.Entity<CarouselEntity>()
+                .HasQueryFilter(c => c.TenantId == _tenant.TenantId);
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken ct = default)
