@@ -98,13 +98,18 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Dynamic CORS must be early
-app.UseCors();
-
+// Static files first (doesn't participate in endpoint routing/CORS)
 app.UseStaticFiles();
 
+app.UseRouting();
+
+// CORS must be after UseRouting and before anything that might block requests
+app.UseCors("Dev");
+
+// Your tenant resolver AFTER CORS so preflights aren’t intercepted
 app.UseTenantResolution();
 
+// Auth after tenant resolution (if auth depends on tenant), before endpoints
 app.UseAuthentication();
 app.UseAuthorization();
 
