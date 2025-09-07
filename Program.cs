@@ -7,15 +7,39 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ---- Rate Limiting ----
+builder.Services.AddRateLimiter(_ => _
+    .AddFixedWindowLimiter("metrics",
+        options => {
+            options.PermitLimit = 30;             // 30 hits
+            options.Window = TimeSpan.FromMinutes(1);
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 0;
+        }
+    )
+);
+
+
 // ---- DB Contexts ----
+
+var dataDir = Path.Combine(builder.Environment.ContentRootPath, "app_data");
+Directory.CreateDirectory(dataDir);  // ensure folder exists
+
+var csApi = $"Data Source={Path.Combine(dataDir, "cms.db")}";
+var csAuth = $"Data Source={Path.Combine(dataDir, "auth.db")}";
+
+
 builder.Services.AddDbContext<AuthDbContext>(opt =>
-    opt.UseInMemoryDatabase("AuthDb"));
+    opt.UseSqlite(csAuth));                // swap from InMemory -> Sqlite
 
 builder.Services.AddDbContext<ApiContext>(opt =>
-    opt.UseInMemoryDatabase("CMS"));   // scoped by default — perfect
+    opt.UseSqlite(csApi));
+
 
 // ---- Identity / Auth ----
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
@@ -88,6 +112,16 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
 
 var app = builder.Build();
+
+
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<AuthDbContext>().Database.Migrate();
+    scope.ServiceProvider.GetRequiredService<ApiContext>().Database.Migrate();
+}
+
+// ---- Metrics endpoint with rate limiting ----
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {

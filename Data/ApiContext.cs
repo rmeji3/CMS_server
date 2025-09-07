@@ -1,5 +1,6 @@
 ﻿using CMS.Models;
 using CMS.Models.Info;
+using CMS.Models.Metrics;
 using CMS.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,9 @@ namespace CMS.Data
         public DbSet<MenuEntity> Menus { get; set; } = null!;
         public DbSet<MenuCategory> MenuCategories { get; set; } = null!;
         public DbSet<MenuItem> MenuItems { get; set; } = null!;
+
+        // Metrics
+        public DbSet<PageViewDaily> PageViewDailies { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
@@ -90,6 +94,11 @@ namespace CMS.Data
 
             // -------- Concurrency token --------
             mb.Entity<MenuEntity>().Property(m => m.RowVersion).IsRowVersion();
+
+            // -------- Metrics --------
+            mb.Entity<PageViewDaily>()
+              .HasIndex(x => new { x.TenantId, x.Path, x.DayUtc })
+              .IsUnique();
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken ct = default)
